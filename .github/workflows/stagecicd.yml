@@ -10,13 +10,13 @@ permissions:
       contents: read
 
 jobs:
-  job0_print-env:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-      - name: Print the env variables from .env_staging
-        run: cat .env_staging
+  #job0_print-env:
+    #runs-on: ubuntu-latest
+    #steps:
+     # - name: Check out repository code
+     #   uses: actions/checkout@v4
+      #- name: Print the env variables from .env_staging
+       # run: cat .env_staging
 
   job1_Docker-Build-GitHub-Actions:
     runs-on: ubuntu-latest
