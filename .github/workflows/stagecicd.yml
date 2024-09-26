@@ -1,0 +1,43 @@
+#Test comment #6
+name: STG Build & Deploy
+run-name: ${{ github.actor }} triggered docker build & deploy job 🚀
+on: 
+  push:
+    branches: ["staging"]
+
+permissions:
+      id-token: write
+      contents: read
+
+jobs:
+  job0_print-env:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Print the env variables from .env_staging
+        run: cat .env_staging
+
+  job1_Docker-Build-GitHub-Actions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Az CLI login'
+        uses: azure/login@v1
+        with:
+            client-id: ${{ secrets.AZURE_CLIENT_ID }}
+            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      - name: Convert repository name to lowercase
+        run: |
+          echo "REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      - name: Build docker image
+        run: |
+          docker build -t ${{ vars.STG_ACR_URL }}/$REPO_LOWERCASE:${{ github.sha }} .
+      - name: Push docker image
+        run: |
+          az acr login --name ${{ vars.STG_ACR_URL }}
+          docker push ${{ vars.STG_ACR_URL }}/$REPO_LOWERCASE:${{ github.sha }}
+      - run: echo "🍏 This job's status is ${{ job.status }}."
