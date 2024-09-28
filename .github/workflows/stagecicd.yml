@@ -73,6 +73,9 @@ jobs:
       run: |
         DIR=$(echo ${{ github.repository }} | cut -d'/' -f2)
         ls -ltra
+        
+        echo "Current directory contents:"
+        ls -la
 
         if [ ! -f .env_staging ]; then
           echo "Error: .env_staging file does not exist!"
