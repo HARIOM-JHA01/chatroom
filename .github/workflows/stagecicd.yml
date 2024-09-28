@@ -72,7 +72,13 @@ jobs:
     - name: copy the env file to the deployment server
       run: |
         DIR=$(echo ${{ github.repository }} | cut -d'/' -f2)
-        ls -ltra 
+        ls -ltra
+
+        if [ ! -f .env_staging ]; then
+          echo "Error: .env_staging file does not exist!"
+          exit 1
+        fi
+
         mv .env_staging .env_$DIR
         SSH_KEY_FILE=$(mktemp)
         echo "${{ secrets.SSH_KEY_STAGE }}" > "$SSH_KEY_FILE"
@@ -97,5 +103,4 @@ jobs:
           sudo docker pull ${{ vars.STG_ACR_URL }}/${{ env.REPO_LOWERCASE }}:${{ github.sha }}
           sudo docker stop ${{ env.CONTAINER_NAME }} || true
           sudo docker rm ${{ env.CONTAINER_NAME }} || true
-          sudo docker run --restart=always -d --name ${{ env.CONTAINER_NAME }} --env-file /tmp/.env_$DIR -p ${{ vars.HOST_PORT }}:${{ vars.CONTAINER_PORT }} ${{ vars.STG_ACR_URL }}/${{ env.REPO_LOWERCASE }}:${{ github.sha }}    
-      
+          sudo docker run --restart=always -d --name ${{ env.CONTAINER_NAME }} --env-file /tmp/.env_$DIR -p ${{ vars.HOST_PORT }}:${{ vars.CONTAINER_PORT }} ${{ vars.STG_ACR_URL }}/${{ env.REPO_LOWERCASE }}:${{ github.sha }}
