@@ -61,8 +61,8 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan github.com >> ~/.ssh/known_hosts
         ssh-agent sh -c 'ssh-add ~/.ssh/id_rsa; git clone git@github.com:ShihaanTechGlobal/DevOps.git'
-        #DIR=$(echo ${{ github.repository }} | cut -d'/' -f2)
-        #cat ./DevOps/pipeline/vars/${{ github.repository }}/STAGING.txt >> .env_staging
+        DIR=$(echo ${{ github.repository }} | cut -d'/' -f2)
+        cat ./DevOps/pipeline/vars/${{ github.repository }}/STAGING.txt >> .env_staging
     - name: Printing full list of secret variables in STAGING
       run: |
         cat ./DevOps/pipeline/vars/${{ github.repository }}/STAGING.txt | cut -d '=' -f 1   
