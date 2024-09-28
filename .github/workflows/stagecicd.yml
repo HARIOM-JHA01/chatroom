@@ -41,3 +41,60 @@ jobs:
           az acr login --name ${{ vars.STG_ACR_URL }}
           docker push ${{ vars.STG_ACR_URL }}/$REPO_LOWERCASE:${{ github.sha }}
       - run: echo "🍏 This job's status is ${{ job.status }}."
+  job2_stage-app-deploy:
+    environment:
+      name: stage
+    needs: [job1_Docker-Build-GitHub-Actions]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+    - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+    - name: Append secrets to env file according to the environment.
+      env:
+        SSH_REPO_KEY: ${{ secrets.SSH_REPO_KEY }}
+      run: |
+        # Ensure SSH key is set up and registered with ssh-agent (unni's github profile ssh key)
+        mkdir -p ~/.ssh
+        echo "$SSH_REPO_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+        ssh-agent sh -c 'ssh-add ~/.ssh/id_rsa; git clone git@github.com:ShihaanTechGlobal/DevOps.git'
+        #DIR=$(echo ${{ github.repository }} | cut -d'/' -f2)
+        #cat ./DevOps/pipeline/vars/${{ github.repository }}/STAGING.txt >> .env_staging
+    - name: Printing full list of secret variables in STAGING
+      run: |
+        cat ./DevOps/pipeline/vars/${{ github.repository }}/STAGING.txt | cut -d '=' -f 1   
+    - name: Printing full list of secret variables in PRODUCTION
+      run: |
+       cat ./DevOps/pipeline/vars/${{ github.repository }}/PRODUCTION.txt | cut -d '=' -f 1   
+    - name: copy the env file to the deployment server
+      run: |
+        DIR=$(echo ${{ github.repository }} | cut -d'/' -f2)
+        ls -ltra 
+        mv .env_staging .env_$DIR
+        SSH_KEY_FILE=$(mktemp)
+        echo "${{ secrets.SSH_KEY_STAGE }}" > "$SSH_KEY_FILE"
+        chmod 600 "$SSH_KEY_FILE"
+        scp -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no .env_$DIR ${{ secrets.SSH_USER }}@${{ secrets.STAGE_HOST }}:/tmp/
+    - name: Convert repository name to lowercase
+      run: |
+        echo "REPO_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+        echo "CONTAINER_NAME=$(echo ${{ github.repository }} | tr '/' '_')" >> $GITHUB_ENV
+    - name: deploy to server
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.STAGE_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY_STAGE }}
+        port: 22
+        command_timeout: 30m
+        script: | 
+          DIR=$(echo ${{ github.repository }} | cut -d'/' -f2)
+          sudo docker ps
+          sudo docker login ${{ vars.STG_ACR_URL }} --username ${{ secrets.ACR_STG_USER }} --password ${{ secrets.ACR_STG_PASSWORD }}
+          sudo docker pull ${{ vars.STG_ACR_URL }}/${{ env.REPO_LOWERCASE }}:${{ github.sha }}
+          sudo docker stop ${{ env.CONTAINER_NAME }} || true
+          sudo docker rm ${{ env.CONTAINER_NAME }} || true
+          sudo docker run --restart=always -d --name ${{ env.CONTAINER_NAME }} --env-file /tmp/.env_$DIR -p ${{ vars.HOST_PORT }}:${{ vars.CONTAINER_PORT }} ${{ vars.STG_ACR_URL }}/${{ env.REPO_LOWERCASE }}:${{ github.sha }}
