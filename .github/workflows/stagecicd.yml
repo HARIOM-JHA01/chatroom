@@ -73,7 +73,7 @@ jobs:
       run: |
         DIR=$(echo ${{ github.repository }} | cut -d'/' -f2)
         ls -ltra 
-     #  mv .env_staging .env_$DIR
+        #mv .env_staging .env_$DIR
         SSH_KEY_FILE=$(mktemp)
         echo "${{ secrets.SSH_KEY_STAGE }}" > "$SSH_KEY_FILE"
         chmod 600 "$SSH_KEY_FILE"
