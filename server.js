@@ -20,6 +20,9 @@ app.use("/api/chat", chatRoutes);
 // Setup Socket.IO
 setupSocket(server);
 
+app.get("/", (req, res) => {
+    res.send("Hello World");
+});
 // Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
