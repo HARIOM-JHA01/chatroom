@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // Chat routes
-app.use("/api/chat", chatRoutes);
+app.use("/api/chatroom/Chatroom", chatRoutes);
 
 // Setup Socket.IO
 setupSocket(server);
@@ -23,6 +23,14 @@ setupSocket(server);
 app.get("/", (req, res) => {
     res.send("Hello World");
 });
+app.get("/api/chatroom/Chatroom/GetHealth", (req, res) => {
+    res.status(200).send({ message: "Server is running", time: new Date() });
+});
+
+app.head("/api/chatroom/Chatroom/Health", (req, res) => {
+    res.status(200).send({ message: "Server is running", time: new Date() });
+});
+
 // Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
