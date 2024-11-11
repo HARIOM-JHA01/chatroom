@@ -1,56 +1,68 @@
 import { Server } from "socket.io";
-import { saveMessage } from "../controllers/chatController.js";
+import { container } from "../config/CosmosDbConfig.js";
 
-export const setupSocket = (server) => {
+// Helper function to save message to Cosmos DB
+async function saveMessageToDB(senderId, recipientId, message) {
+    const chatData = {
+        senderId,
+        recipientId,
+        message,
+        timestamp: new Date().toISOString(),
+    };
+    await container.items.create(chatData);
+    return chatData;
+}
+
+export function setupSocket(server) {
     const io = new Server(server, {
         cors: {
             origin: "*",
-            methods: ["GET", "POST"],
         },
-        pingTimeout: 30000, // 30 seconds
-        pingInterval: 25000,
     });
 
+    // Listen for new connections
     io.on("connection", (socket) => {
-        console.log(`A user connected: ${socket.id}`);
+        console.log("New client connected:", socket.id);
 
-        // Log when the user joins a room
-        socket.on("join_room", (roomId) => {
-            console.log(
-                `User with socket ID ${socket.id} joining room: ${roomId}`
-            );
+        // Handle joining the chat component
+        socket.on("initiate_chat", (userId) => {
+            socket.userId = userId; // Store the userId on the socket instance
+            console.log(`User ${userId} has initiated a chat.`);
+        });
+
+        // Handle user joining a personal chat room
+        socket.on("join_personal_chat", ({ userId, otherUserId }) => {
+            const roomId = [userId, otherUserId].sort().join("_"); // Create a unique room ID
             socket.join(roomId);
             console.log(
-                `User ${socket.id} successfully joined room: ${roomId}`
+                `User ${userId} joined personal chat with ${otherUserId} in room ${roomId}`
             );
         });
 
-        // Log when a message is received
-        socket.on("send_message", async (messageData) => {
-            console.log(
-                `Received message from ${socket.id} in room ${messageData.roomId}`
-            );
-            console.log("Message Data:", messageData);
+        // Handle sending a message to a specific user
+        socket.on(
+            "send_message",
+            async ({ senderId, recipientId, message }) => {
+                const roomId = [senderId, recipientId].sort().join("_"); // Unique room based on user IDs
 
-            try {
-                // Save the message to CosmosDB
-                const savedMessage = await saveMessage(messageData);
-                console.log("Message saved to database:", savedMessage);
-
-                // Broadcast the message to everyone in the room
-                io.to(messageData.roomId).emit("receive_message", savedMessage);
-                console.log(
-                    `Message sent to room ${messageData.roomId}:`,
-                    savedMessage
+                // Save the message to the database
+                const chatData = await saveMessageToDB(
+                    senderId,
+                    recipientId,
+                    message
                 );
-            } catch (error) {
-                console.error("Error saving or sending message:", error);
-            }
-        });
 
-        // Log when the user disconnects
+                // Emit the message to the room
+                io.to(roomId).emit("receive_message", chatData);
+                console.log(
+                    `Message sent from ${senderId} to ${recipientId} in room ${roomId}`
+                );
+            }
+        );
+
+        // Handle disconnection
         socket.on("disconnect", () => {
-            console.log(`User disconnected: ${socket.id}`);
+            console.log(`Client disconnected: ${socket.id}`);
         });
     });
-};
+}
