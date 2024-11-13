@@ -1,4 +1,4 @@
-import { container } from "../config/CosmosDbConfig.js";
+import { container } from "../config/cosmosDbConfig.js";
 import { createChatData } from "../models/chatModel.js";
 
 // Fetch chat history between two users
