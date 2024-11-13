@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { container } from "../config/CosmosDbConfig.js";
+import { container } from "../config/cosmosDbConfig.js";
 
 // Helper function to save message to Cosmos DB
 async function saveMessageToDB(senderId, recipientId, message) {
