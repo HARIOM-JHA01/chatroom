@@ -3,13 +3,20 @@ import http from "http";
 import dotenv from "dotenv";
 import cors from "cors";
 import chatRoutes from "./routes/chatRoutes.js";
+import { Server } from "socket.io";
 import { setupSocket } from "./utils/socket.js";
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
-
+const io = new Server(server, {
+    path: "/api/chatroom/Chatroom/socket.io",
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"],
+    },
+});
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -18,7 +25,7 @@ app.use(express.json());
 app.use("/api/chatroom/Chatroom", chatRoutes);
 
 // Setup Socket.IO
-setupSocket(server);
+setupSocket(io);
 
 app.get("/", (req, res) => {
     res.send("Hello World");

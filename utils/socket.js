@@ -13,12 +13,14 @@ async function saveMessageToDB(senderId, recipientId, message) {
     return chatData;
 }
 
-export function setupSocket(server) {
-    const io = new Server(server, {
-        cors: {
-            origin: "*",
-        },
-    });
+export function setupSocket(io) {
+    // const io = new Server(server, {
+    //     path: "/api/socket",
+    //     cors: {
+    //         origin: "*",
+    //         methods: ["GET", "POST"],
+    //     },
+    // });
 
     // Listen for new connections
     io.on("connection", (socket) => {
